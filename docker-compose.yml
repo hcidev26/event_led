@@ -1,0 +1,19 @@
+services:
+  led-welcome:
+    build: .
+    image: led-welcome:latest
+    container_name: led-welcome
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 3000                       # cong ben trong container (giu nguyen)
+      PUBLIC_PORT: ${PORT:-3000}       # cong ben ngoai -> dung de tao link trong ma QR
+      DATA_DIR: /data
+    ports:
+      - "${PORT:-3000}:3000"           # doi PORT trong file .env
+    volumes:
+      - led-data:/data                 # data.json + uploads/ luu ben ngoai container, khong mat khi rebuild
+
+volumes:
+  led-data:

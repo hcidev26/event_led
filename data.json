@@ -1,0 +1,73 @@
+{
+  "config": {
+    "headline": "SỰ KIỆN 2026",
+    "greeting": "CHÀO MỪNG",
+    "nameFormat": "{name}",
+    "subline": "đã đến với sự kiện của chúng tôi",
+    "emptyMessage": "Quét mã QR để check-in",
+    "newDuration": 8,
+    "idleEnabled": true,
+    "idleDuration": 5,
+    "idleOrder": "newest",
+    "idleLimit": 0,
+    "fontFamily": "Be Vietnam Pro",
+    "textColor": "#ffffff",
+    "accentColor": "#ffd166",
+    "nameScale": 1,
+    "textAlign": "center",
+    "animation": "zoom",
+    "showClock": false,
+    "bgType": "image",
+    "bgColor": "#0b1020",
+    "bgGradient": "linear-gradient(120deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
+    "bgImage": "/uploads/1794305527904-471e80.png",
+    "bgVideo": "",
+    "bgFit": "cover",
+    "bgOverlay": 0.35,
+    "qrShow": false,
+    "qrPosition": "right",
+    "qrSize": 22,
+    "qrCaption": "Quét mã để check-in",
+    "publicUrl": "",
+    "formTitle": "Check-in sự kiện",
+    "formSubtitle": "Nhập họ tên của bạn để hiển thị lời chào trên màn hình",
+    "formPlaceholder": "Họ và tên",
+    "formButton": "Gửi",
+    "formThanks": "Cảm ơn {name}! Hãy nhìn lên màn hình nhé 🎉",
+    "maxNameLength": 40,
+    "screenWidthM": 8,
+    "screenHeightM": 3
+  },
+  "guests": [
+    {
+      "id": "d84979e3-8336-4a44-a0b7-416fc20277c5",
+      "name": "Trung",
+      "at": 1794305270363
+    },
+    {
+      "id": "b2588da4-55eb-4c9b-aa77-e9145b64047d",
+      "name": "Long",
+      "at": 1794305285791
+    },
+    {
+      "id": "5291d80d-2208-44d6-82c8-6cd3a9e1ca74",
+      "name": "Minh",
+      "at": 1794305298819
+    },
+    {
+      "id": "74f7d616-ccf0-4088-94c3-19a10f66ce4d",
+      "name": "Đức",
+      "at": 1794305640387
+    },
+    {
+      "id": "cffa92d9-4f3b-4a8a-ba5a-f565064803e6",
+      "name": "Minh",
+      "at": 1794305662305
+    }
+  ],
+  "auth": {
+    "user": "admin",
+    "salt": "594dbfa045642cc67143d5f2c360ec48",
+    "hash": "65f965754cf6be21a5b27480524fdce4d89482ad78bc5ee341b4f34752adf8cceabcdd6b94b9f519a322c92d344bb1fcdbdddab317b7b7040437912c8c723937"
+  }
+}

@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Màn hình LED</title>
+<link id="fontLink" rel="stylesheet" href="">
+<style>
+  :root { --text:#fff; --accent:#ffd166; --font:'Be Vietnam Pro'; --qr:22vh; --nameScale:1; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; cursor: none; }
+  body { font-family: var(--font), system-ui, 'Segoe UI', Arial, sans-serif; color: var(--text); }
+
+  #bg, #bgOverlay, #fx { position: fixed; inset: 0; }
+  #bg { background: #0b1020; }
+  #bg img, #bg video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #bgOverlay { background: #000; opacity: .35; pointer-events: none; }
+  #fx { pointer-events: none; z-index: 3; }
+
+  #stage { position: fixed; inset: 0; display: flex; align-items: stretch; z-index: 2; padding: 5vh 4vh; gap: 4vh; }
+  #stage.qr-left { flex-direction: row-reverse; }
+  #main { flex: 1; min-width: 0; position: relative; display: flex; align-items: center; justify-content: center; }
+
+  #content { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2.2vh; }
+  #content.left { align-items: flex-start; text-align: left; }
+  .line { white-space: pre-line; line-height: 1.15; text-shadow: 0 .4vh 2vh rgba(0,0,0,.45); max-width: 100%; }
+  #headline { font-size: 6vh; font-weight: 600; letter-spacing: .35em; text-transform: uppercase; opacity: .85; }
+  #greeting { font-size: 9vh; font-weight: 700; color: var(--accent); letter-spacing: .08em; }
+  #name { font-size: calc(22vh * var(--nameScale)); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+  #subline { font-size: 6vh; font-weight: 400; opacity: .92; }
+  .line:empty { display: none; }
+
+  #qrBox { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5vh; }
+  #qrBox .card { background: #fff; padding: 1.2vh; border-radius: 2vh; box-shadow: 0 1vh 4vh rgba(0,0,0,.4); }
+  #qrImg { width: var(--qr); height: var(--qr); display: block; }
+  #qrCaption { font-size: 3.6vh; font-weight: 600; text-align: center; max-width: calc(var(--qr) * 1.6); text-shadow: 0 .3vh 1.5vh rgba(0,0,0,.5); }
+  #stage.qr-br #qrBox, #stage.qr-bl #qrBox { position: absolute; bottom: 5vh; }
+  #stage.qr-br #qrBox { right: 4vh; }
+  #stage.qr-bl #qrBox { left: 4vh; }
+  #stage.no-qr #qrBox { display: none; }
+
+  #clock { position: fixed; top: 3vh; right: 4vh; z-index: 4; font-size: 4vh; font-weight: 600; opacity: .8; display: none; }
+  #hint { position: fixed; left: 50%; bottom: 2vh; transform: translateX(-50%); z-index: 5; background: rgba(0,0,0,.6); color: #fff; padding: 1vh 2vh; border-radius: 1vh; font: 14px system-ui; transition: opacity .6s; }
+  #conn { position: fixed; left: 1vh; top: 1vh; width: 1.2vh; height: 1.2vh; border-radius: 50%; background: #e63946; z-index: 5; opacity: 0; transition: opacity .3s; }
+  #conn.off { opacity: 1; }
+
+  /* animations */
+  .in-zoom  { animation: inZoom .9s cubic-bezier(.2,.9,.2,1.15) both; }
+  .out-zoom { animation: outZoom .45s ease-in both; }
+  .in-fade  { animation: inFade .8s ease both; }
+  .out-fade { animation: outFade .45s ease both; }
+  .in-slide { animation: inSlide .8s cubic-bezier(.2,.8,.2,1) both; }
+  .out-slide{ animation: outSlide .45s ease-in both; }
+  .in-rise  { animation: inRise .85s cubic-bezier(.2,.8,.2,1) both; }
+  .out-rise { animation: outRise .45s ease-in both; }
+  @keyframes inZoom  { from { opacity:0; transform: scale(.6); filter: blur(1vh); } to { opacity:1; transform:none; filter:none; } }
+  @keyframes outZoom { to { opacity:0; transform: scale(1.15); filter: blur(1vh); } }
+  @keyframes inFade  { from { opacity:0; } to { opacity:1; } }
+  @keyframes outFade { to { opacity:0; } }
+  @keyframes inSlide { from { opacity:0; transform: translateX(15%); } to { opacity:1; transform:none; } }
+  @keyframes outSlide{ to { opacity:0; transform: translateX(-15%); } }
+  @keyframes inRise  { from { opacity:0; transform: translateY(20%); } to { opacity:1; transform:none; } }
+  @keyframes outRise { to { opacity:0; transform: translateY(-20%); } }
+  #content > .line { animation: none; }
+  #content.in-zoom #name, #content.in-rise #name { animation: pop 1.4s .25s ease both; }
+  @keyframes pop { 0% { letter-spacing: -.02em; } 100% { letter-spacing: .01em; } }
+  #content.is-new #name { color: var(--text); }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="bgOverlay"></div>
+<canvas id="fx"></canvas>
+<div id="clock"></div>
+<div id="conn" title="Mất kết nối server"></div>
+
+<div id="stage">
+  <div id="main">
+    <div id="content">
+      <div class="line" id="headline"></div>
+      <div class="line" id="greeting"></div>
+      <div class="line" id="name"></div>
+      <div class="line" id="subline"></div>
+    </div>
+  </div>
+  <div id="qrBox">
+    <div class="card"><img id="qrImg" alt="QR"></div>
+    <div id="qrCaption"></div>
+  </div>
+</div>
+<div id="hint">Nhấn F hoặc double-click để bật toàn màn hình</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let config = {}, guests = [], queue = [];
+let current = null, timer = null, idleIdx = 0, bgKey = '';
+
+// ---------- helpers ----------
+const fill = (tpl, name) => String(tpl || '').replaceAll('{name}', name || '').replace(/\\n/g, '\n');
+
+function loadFont(name) {
+  if (!name) return;
+  const href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(name).replace(/%20/g, '+') + ':wght@400;600;700;800&display=swap&subset=vietnamese';
+  if ($('fontLink').getAttribute('href') !== href) $('fontLink').setAttribute('href', href);
+}
+
+function applyConfig() {
+  const c = config, r = document.documentElement.style;
+  r.setProperty('--text', c.textColor);
+  r.setProperty('--accent', c.accentColor);
+  r.setProperty('--font', `'${c.fontFamily}'`);
+  r.setProperty('--qr', (c.qrSize || 22) + 'vh');
+  r.setProperty('--nameScale', c.nameScale || 1);
+  loadFont(c.fontFamily);
+
+  // background
+  const key = [c.bgType, c.bgColor, c.bgGradient, c.bgImage, c.bgVideo, c.bgFit].join('|');
+  if (key !== bgKey) {
+    bgKey = key;
+    const bg = $('bg'); bg.innerHTML = ''; bg.style.background = c.bgColor || '#000';
+    if (c.bgType === 'gradient') bg.style.background = c.bgGradient;
+    if (c.bgType === 'image' && c.bgImage) {
+      const img = new Image(); img.src = c.bgImage; img.style.objectFit = c.bgFit; bg.appendChild(img);
+    }
+    if (c.bgType === 'video' && c.bgVideo) {
+      const v = document.createElement('video');
+      Object.assign(v, { src: c.bgVideo, autoplay: true, loop: true, muted: true, playsInline: true });
+      v.style.objectFit = c.bgFit; bg.appendChild(v); v.play().catch(() => {});
+    }
+  }
+  $('bgOverlay').style.opacity = Number(c.bgOverlay) || 0;
+
+  // QR
+  const st = $('stage');
+  st.className = { right: '', left: 'qr-left', 'bottom-right': 'qr-br', 'bottom-left': 'qr-bl' }[c.qrPosition] || '';
+  if (!c.qrShow) st.classList.add('no-qr');
+  $('qrCaption').textContent = c.qrCaption || '';
+  $('content').classList.toggle('left', c.textAlign === 'left');
+  $('clock').style.display = c.showClock ? 'block' : 'none';
+}
+
+function setQR(url) {
+  const src = '/api/qr.svg?url=' + encodeURIComponent(url);
+  if ($('qrImg').getAttribute('src') !== src) $('qrImg').src = src;
+}
+
+// Thu nho chu ten cho vua khung (toi da 2 dong)
+function fitName() {
+  const el = $('name'), box = $('main');
+  el.style.fontSize = ''; el.style.whiteSpace = 'nowrap';
+  const base = parseFloat(getComputedStyle(el).fontSize);
+  let size = base;
+  // Uu tien 1 dong: thu nho toi 55% co chu goc, neu van khong vua thi cho xuong dong
+  while (el.scrollWidth > box.clientWidth + 1 && size > base * 0.55) { size *= 0.94; el.style.fontSize = size + 'px'; }
+  el.style.whiteSpace = '';
+  const maxH = box.clientHeight * 0.62;
+  let guard = 40;
+  while (guard-- > 0 && (el.scrollWidth > box.clientWidth + 1 || el.offsetHeight > maxH)) {
+    size *= 0.92; el.style.fontSize = size + 'px';
+  }
+}
+
+function render(item) {
+  const c = config, el = $('content');
+  const anim = c.animation || 'zoom';
+  const paint = () => {
+    if (item.type === 'empty') {
+      $('headline').textContent = fill(c.headline, '');
+      $('greeting').textContent = '';
+      $('name').textContent = fill(c.emptyMessage, '');
+      $('subline').textContent = '';
+    } else {
+      $('headline').textContent = fill(c.headline, item.name);
+      $('greeting').textContent = fill(c.greeting, item.name);
+      $('name').textContent = fill(c.nameFormat || '{name}', item.name);
+      $('subline').textContent = fill(c.subline, item.name);
+    }
+    el.classList.toggle('is-new', item.type === 'new');
+    el.className = el.className.replace(/\b(in|out)-\w+/g, '').trim();
+    void el.offsetWidth;
+    el.classList.add('in-' + anim);
+    fitName();
+    if (item.type === 'new') burst();
+  };
+  if (current) {
+    el.className = el.className.replace(/\b(in|out)-\w+/g, '').trim();
+    void el.offsetWidth;
+    el.classList.add('out-' + anim);
+    setTimeout(paint, 430);
+  } else paint();
+  current = item;
+}
+
+// ---------- scheduler ----------
+function idleList() {
+  let list = guests.slice().sort((a, b) => a.at - b.at);
+  if (config.idleOrder === 'newest') list.reverse();
+  if (config.idleLimit > 0) list = config.idleOrder === 'oldest' ? list.slice(-config.idleLimit) : list.slice(0, config.idleLimit);
+  return list;
+}
+
+function next() {
+  clearTimeout(timer);
+  let item, secs;
+  if (queue.length) {
+    const g = queue.shift();
+    item = { type: 'new', id: g.id, name: g.name };
+    secs = Number(config.newDuration) || 8;
+    if (queue.length >= 3) secs = Math.max(3, secs / 2); // dong nguoi -> chay nhanh hon
+  } else if (config.idleEnabled && guests.length) {
+    const list = idleList();
+    if (config.idleOrder === 'random') {
+      let g; do { g = list[Math.floor(Math.random() * list.length)]; } while (list.length > 1 && current && g.id === current.id);
+      item = { type: 'idle', id: g.id, name: g.name };
+    } else {
+      idleIdx = idleIdx % list.length;
+      const g = list[idleIdx++];
+      item = { type: 'idle', id: g.id, name: g.name };
+    }
+    secs = Number(config.idleDuration) || 5;
+  } else {
+    item = { type: 'empty' };
+    secs = 5;
+  }
+  const same = current && current.type === item.type && current.id === item.id && item.type !== 'new';
+  if (!same) render(item);
+  timer = setTimeout(next, secs * 1000);
+}
+
+function onGuest(g) {
+  queue.push(g);
+  // Dang chay lai / man trong -> ngat ngay de hien nguoi moi
+  if (!current || current.type !== 'new') next();
+}
+
+// ---------- confetti ----------
+const cv = $('fx'), ctx = cv.getContext('2d'); let parts = [], raf = 0;
+function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+addEventListener('resize', () => { resize(); fitName(); }); resize();
+function burst() {
+  const colors = [config.accentColor || '#ffd166', config.textColor || '#fff', '#ef476f', '#06d6a0', '#118ab2'];
+  for (let i = 0; i < 220; i++) {
+    parts.push({ x: cv.width * (0.1 + Math.random() * 0.8), y: -20 - Math.random() * cv.height * 0.3,
+      vx: (Math.random() - .5) * 4, vy: 2 + Math.random() * 4, r: 4 + Math.random() * 8,
+      a: Math.random() * 6.28, va: (Math.random() - .5) * .3, c: colors[i % colors.length] });
+  }
+  if (!raf) tick();
+}
+function tick() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  parts = parts.filter((p) => p.y < cv.height + 30);
+  for (const p of parts) {
+    p.x += p.vx; p.y += p.vy; p.a += p.va; p.vy += 0.03;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c;
+    ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore();
+  }
+  raf = parts.length ? requestAnimationFrame(tick) : 0;
+}
+
+// ---------- clock ----------
+setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); }, 1000);
+
+// ---------- fullscreen ----------
+function fs() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); }
+addEventListener('dblclick', fs);
+addEventListener('keydown', (e) => { if (e.key === 'f' || e.key === 'F') fs(); });
+setTimeout(() => { $('hint').style.opacity = 0; }, 5000);
+
+// ---------- realtime ----------
+async function load() {
+  const s = await fetch('/api/state').then((r) => r.json());
+  config = s.config; guests = s.guests; setQR(s.checkinUrl);
+  applyConfig();
+}
+function connect() {
+  const es = new EventSource('/events');
+  es.onopen = () => { $('conn').classList.remove('off'); load(); };
+  es.onerror = () => $('conn').classList.add('off');
+  es.addEventListener('guest', (e) => onGuest(JSON.parse(e.data)));
+  es.addEventListener('guests', (e) => { guests = JSON.parse(e.data); });
+  es.addEventListener('config', async (e) => {
+    config = JSON.parse(e.data); applyConfig();
+    const s = await fetch('/api/state').then((r) => r.json()); setQR(s.checkinUrl);
+    if (current) { const c = current; current = null; render(c); }
+  });
+}
+load().then(() => { next(); connect(); });
+</script>
+</body>
+</html>

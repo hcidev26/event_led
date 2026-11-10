@@ -1,0 +1,12 @@
+node_modules
+data
+data.json
+uploads
+.env
+.env.*
+.claude
+.git
+*.log
+Dockerfile
+docker-compose.yml
+README.md

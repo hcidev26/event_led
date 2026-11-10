@@ -1,0 +1,9 @@
+{
+  "name": "led-welcome",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QR check-in -> man hinh LED chao mung",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "qrcode": "^1.5.4" }
+}
